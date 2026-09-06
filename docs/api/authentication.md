@@ -361,5 +361,6 @@ Because tokens have a 2-hour lifespan, long-running automation scripts or sideca
 ## Related Documentation
 
 - **[API Overview](./overview.md)** — Architectural model, base URLs, and functional domains.
+- **[Peer Management API](./peers.md)** — Complete endpoint reference for client peers and telemetry.
 - **[API Reference](./reference.md)** — Comprehensive catalog of all available API endpoints.
 - **[External Authentication Concept](../concepts/external-auth.md)** — Reverse proxy forward-auth integration.

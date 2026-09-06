@@ -228,7 +228,7 @@ The following endpoints manage peers and their configurations:
 
 | Method | Endpoint | Authorization | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/peer` | Admin, Operator | Retrieves a paginated list of peers with optional server filtering and search query. |
+| `GET` | `/api/peer` | Admin, Operator | Retrieves a paginated list of peers with optional search query. |
 | `GET` | `/api/peer/{id}` | Admin, Operator | Retrieves detailed configuration and metadata for a specific peer. |
 | `POST` | `/api/peer` | Admin, Operator | Creates a new peer, allocates an IP address, and synchronizes the WireGuard server. |
 | `PUT` | `/api/peer/{id}` | Admin, Operator | Updates peer parameters (name, DNS, Allowed IPs, KeepAlive, Expiration). |
@@ -236,8 +236,16 @@ The following endpoints manage peers and their configurations:
 | `PATCH` | `/api/peer/{id}/status/{status}` | Admin, Operator | Toggles the peer between active (`true`) and inactive (`false`). |
 | `GET` | `/api/peer/{id}/conf` | Admin, Operator | Downloads the generated `.conf` client profile. |
 | `GET` | `/api/peer/{id}/qrcode` | Admin, Operator | Returns the client configuration as a PNG QR code image. |
-| `GET` | `/api/peer/{id}/stats/live-stats` | Admin, Operator | Retrieves real-time handshake and throughput metrics from the WireGuard runtime. |
+| `GET` | `/api/peer/{id}/policies` | Admin, Operator | Retrieves policy tags assigned to the peer. |
+| `POST` | `/api/peer/{id}/policies/{policyId}` | Admin, Operator | Attaches a policy tag to the peer and updates firewall filtering rules. |
+| `DELETE` | `/api/peer/{id}/policies/{policyID}` | Admin, Operator | Removes a policy tag from the peer and updates firewall filtering rules. |
+| `GET` | `/api/peer/{id}/live-stats` | Admin, Operator | Retrieves real-time handshake and throughput metrics from the WireGuard runtime. |
 | `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves historical transfer data points for usage graphing. |
+| `GET` | `/api/peer/authorized` | Anonymous | Reverse proxy forward-auth verification for target domains. |
+
+:::info Complete API Specification
+For detailed payload schemas, request/response headers, and SDK examples, see the **[Peer Management API](../api/peers.md)**.
+:::
 
 ---
 
@@ -255,6 +263,7 @@ The following endpoints manage peers and their configurations:
 ## Related Documentation
 
 - **[Architecture & Concepts](./overview.md)** — High-level overview of how peers connect to the rest of the system.
+- **[Peer Management API](../api/peers.md)** — Comprehensive API reference for the `/api/peer` controller.
 - **[Tags](./tags.md)** — Learn how to organize peers into policy groups.
 - **[Services](./services.md)** — Define the network resources peers can connect to.
 - **[Create a Peer Guide](../guides/create-peer.md)** — Step-by-step practical guide to creating and distributing a peer.

@@ -1,6 +1,7 @@
 import type {ReactNode} from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 
@@ -10,6 +11,11 @@ function HomepageHeader(): ReactNode {
   return (
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">
+        <img
+          src={useBaseUrl('/img/WireManager_logo.png')}
+          alt="WireManager Logo"
+          className={styles.heroLogo}
+        />
         <Heading as="h1" className="hero__title">
           WireManager
         </Heading>

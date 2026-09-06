@@ -132,6 +132,10 @@ Controls VPN client identities:
 - Instant peer activation/deactivation toggle.
 - Layer-7 external authorization for reverse proxies (`/api/peer/authorized`).
 
+:::info Dedicated Peer API Guide
+For complete request/response schemas, status codes, and code examples for all 14 peer endpoints, consult the **[Peer Management API](./peers.md)**.
+:::
+
 ### 5. Access Policies, Tags & Services (`/api/policy`)
 Governs the Zero-Trust network access engine:
 - **Services**: Define target internal IPs, ports, protocols, and optional domain associations.
@@ -196,5 +200,6 @@ WireManager utilizes standard HTTP status codes to indicate the result of API re
 ## Next Steps
 
 - **[Authentication & Tokens](./authentication.md)** — Step-by-step guide to generating, validating, and refreshing API tokens.
+- **[Peer Management API](./peers.md)** — Complete endpoint reference for managing WireGuard client peers, profiles, and telemetry.
 - **[Full API Reference](./reference.md)** — Comprehensive endpoint specification with parameters, status codes, and schemas.
 - **[Concepts: Architecture Overview](../concepts/overview.md)** — Conceptual understanding of servers, peers, tags, and services.

@@ -42,7 +42,11 @@ const sidebars: SidebarsConfig = {
       label: 'API',
       items: [
         'api/overview',
+        'api/setup',
         'api/authentication',
+        'api/peers',
+        'api/servers',
+        'api/policies',
         'api/reference',
       ],
     },

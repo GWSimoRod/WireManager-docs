@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'WireManager',
   tagline: 'WireGuard access management made simple',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/WireManager_logo.png',
 
   url: 'https://gwsimorod.github.io',
   baseUrl: '/WireManager-docs/',
@@ -48,11 +48,12 @@ const config: Config = {
   themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig: {
+    image: 'img/WireManager_logo.png',
     navbar: {
       title: 'WireManager',
       logo: {
         alt: 'WireManager Logo',
-        src: 'img/logo.svg',
+        src: 'img/WireManager_logo.png',
       },
       items: [
         {
@@ -71,6 +72,13 @@ const config: Config = {
 
     footer: {
       style: 'dark',
+      logo: {
+        alt: 'WireManager Logo',
+        src: 'img/WireManager_logo.png',
+        href: 'https://github.com/GWSimoRod/WireManager',
+        width: 48,
+        height: 48,
+      },
       links: [
         {
           title: 'Documentation',
