@@ -67,7 +67,7 @@ In WireManager, services represent the specific destinations and ports you wish 
 5. **Global Service Switch**: Toggle **ON**
 
 :::tip Smart Global Detection
-When you type `DNS` into the name field, WireManager's smart detection banner automatically suggests enabling **Servizio Globale**. Click the suggestion banner to toggle it on with a single click.
+When you type `DNS` into the name field, WireManager's smart detection banner automatically suggests enabling **Global Service**. Click the suggestion banner to toggle it on with a single click.
 :::
 
 6. Click **Create**. Because this service is marked Global, WireManager immediately injects universal allow rules into all active WireGuard server firewall chains.

@@ -53,7 +53,7 @@ graph TD
 
 To manage system users:
 1. You must be logged in to WireManager with an account that has the **Admin** role.
-2. The user management console is located at `http://<your-server>:3002/users` (or accessible via the **Utenti** link in the navigation menu).
+2. The user management console is located at `http://<your-server>:3002/users` (or accessible via the **Users** link in the navigation menu).
 
 :::note Access Restriction for Operators
 Accounts with the **Operator** role do not see the User Management menu option and receive HTTP `403 Forbidden` if attempting to query `/api/auth/register` or `/api/auth/users`.
@@ -64,7 +64,7 @@ Accounts with the **Operator** role do not see the User Management menu option a
 ## Step 1: Open the User Management Console
 
 1. Log in to the WireManager web console with your administrator credentials.
-2. In the navigation sidebar, click on **Utenti** (`/users`).
+2. In the navigation sidebar, click on **Users** (`/users`).
 
 The page is divided into two operational panels:
 - **Left / Top Panel**: Create New User form.
@@ -94,8 +94,8 @@ To create a new operator or administrator:
 1. In the **Create New User** form:
    - **Username**: Enter a unique username (minimum 3 characters, maximum 50 characters).
    - **Password**: Enter a secure password (minimum 8 characters, maximum 128 characters). Click the eye icon to toggle visibility.
-   - **Role**: Select either **Operatore** (`Operator`) or **Admin** (`Admin`).
-2. Click **Crea Utente** (`Create User`).
+   - **Role**: Select either **Operator** or **Admin**.
+2. Click **Create Account**.
 3. A success notification will confirm account creation, and the new user will immediately appear in the user table.
 
 ### Security Implementation Behind the Scenes
@@ -122,7 +122,7 @@ You can escalate or demote an account's privileges without having to recreate th
 1. Locate the user in the **Existing Users** list.
 2. Click the role dropdown selector next to the user's name:
    - Choose **Admin** to grant full administrative capabilities.
-   - Choose **Operatore** to restrict the account to peer operations.
+   - Choose **Operator** to restrict the account to peer operations.
 3. The role change takes effect immediately via `PATCH /api/auth/users/{uuid}/role/{role}`.
 
 :::caution Self-Demotion Protection

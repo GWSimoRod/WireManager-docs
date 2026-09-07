@@ -211,7 +211,7 @@ The WireManager web console (`/services`) streamlines service configuration thro
 When typing a name into the Service Creation Modal, WireManager analyzes the input against a database of well-known infrastructure keywords:
 - Keywords recognized: `dns`, `dhcp`, `ntp`, `ldap`, `radius`, `syslog`, `smtp`, `prometheus`, `grafana`, `gateway`, `pki`, `nfs`, `traefik`, and more.
 - If a match is detected, the UI displays a suggestion banner:
-  > **Suggerimento**: *DNS* è tipicamente un servizio utilizzato da tutti i peer. Potresti voler attivare il flag **Servizio Globale**.
+  > **Suggestion**: *DNS* is typically a service used by all peers. You might want to enable the flag **Global Service**.
 - Administrators can accept the suggestion with a single click or dismiss it.
 
 ### 3. Dynamic Protocol Forms

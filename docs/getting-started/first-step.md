@@ -24,9 +24,9 @@ This guide assumes you are logged in as an **Admin** user. Some actions (such as
 
 ## Step 1: Create a WireGuard Server
 
-Navigate to the **Dashboard** page. If no servers have been created yet, you will see an empty state with an **"Aggiungi il primo server"** button.
+Navigate to the **Dashboard** page. If no servers have been created yet, you will see an empty state with an **"Add your first server"** button.
 
-Click **"Aggiungi Server"** to open the server creation dialog. Fill in the following fields:
+Click **"Add Server"** to open the server creation dialog. Fill in the following fields:
 
 | Field            | Description                                                  | Example               |
 | ---------------- | ------------------------------------------------------------ | --------------------- |
@@ -34,7 +34,7 @@ Click **"Aggiungi Server"** to open the server creation dialog. Fill in the foll
 | **Listen Port**  | The UDP port WireGuard listens on. Must match the port exposed in the Docker Compose file. | `51820`               |
 | **Endpoint**     | The public hostname or IP address that clients use to connect to the server. | `vpn.example.com`     |
 
-Click **"Crea"** to create the server. WireManager will automatically generate a key pair (private and public) for the server interface.
+Click **"Create"** to create the server. WireManager will automatically generate a key pair (private and public) for the server interface.
 
 :::tip
 
@@ -48,7 +48,7 @@ The **Range IP** defines the private address space of your VPN. Common choices a
 
 Before creating a peer, it's useful to define the **services** that peers will be allowed to access. Services represent network resources (e.g., an SSH server, a web application, a database) that you want to protect behind the VPN.
 
-Navigate to the **Services** page and click **"Nuovo Servizio"**. Fill in the following fields:
+Navigate to the **Services** page and click **"New Service"**. Fill in the following fields:
 
 | Field              | Description                                                                 | Example             |
 | ------------------ | --------------------------------------------------------------------------- | ------------------- |
@@ -59,7 +59,7 @@ Navigate to the **Services** page and click **"Nuovo Servizio"**. Fill in the fo
 | **Domain**         | *(Optional)* The domain associated with the service, used for External Authentication with Nginx Proxy Manager. | `git.example.com` |
 | **Global Service** | When enabled, all peers are automatically allowed access to this service (firewall rules are added globally). | Off               |
 
-Click **"Crea"** to save the service.
+Click **"Create"** to save the service.
 
 :::info
 
@@ -77,7 +77,7 @@ WireManager will suggest enabling "Global Service" when it detects common infras
 
 Tags are used to group services together and define access policies. When a tag is assigned to a peer, the peer gains access to all services linked to that tag.
 
-Navigate to the **Tags** page and click **"Nuovo Tag"**. Fill in the following fields:
+Navigate to the **Tags** page and click **"New Tag"**. Fill in the following fields:
 
 | Field                 | Description                                                         | Example           |
 | --------------------- | ------------------------------------------------------------------- | ----------------- |
@@ -85,7 +85,7 @@ Navigate to the **Tags** page and click **"Nuovo Tag"**. Fill in the following f
 | **Color**             | A color for visual identification. Choose from 16 presets or enter a custom hex value. | `#3B82F6`         |
 | **Associated Services** | *(Optional)* Select the services that this tag should grant access to. | Select `SSH Access` |
 
-Click **"Crea"** to save the tag.
+Click **"Create"** to save the tag.
 
 :::tip
 
@@ -97,7 +97,7 @@ You can create tags without associating services immediately. Services can be ad
 
 ## Step 4: Create a Peer
 
-Now it's time to create a VPN client. Navigate to the **Peers** page and click **"Aggiungi Peer"**.
+Now it's time to create a VPN client. Navigate to the **Peers** page and click **"Add Peer"**.
 
 Fill in the following fields:
 
@@ -124,7 +124,7 @@ In the **Tag (Policy)** section at the bottom of the form, select the tags you w
 
 For this example, select the **Developers** tag we created in Step 3.
 
-Click **"Crea"** to create the peer. WireManager will:
+Click **"Create"** to create the peer. WireManager will:
 
 1. Generate a key pair for the peer.
 2. Assign an IP address (automatically if not specified).
