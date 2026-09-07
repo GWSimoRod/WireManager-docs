@@ -6,8 +6,8 @@ const config: Config = {
   tagline: 'WireGuard access management made simple',
   favicon: 'img/WireManager_logo.png',
 
-  url: 'https://gwsimorod.github.io',
-  baseUrl: '/WireManager-docs/',
+  url: 'https://docs.netrod.xyz',
+  baseUrl: '/',
 
   organizationName: 'GWSimoRod',
   projectName: 'WireManager-docs',
