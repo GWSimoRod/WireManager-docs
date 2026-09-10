@@ -34,6 +34,7 @@ const sidebars: SidebarsConfig = {
         'guides/configure-access',
         'guides/nginx-proxy-manager',
         'guides/user-management',
+        'guides/audit-logs',
       ],
     },
 

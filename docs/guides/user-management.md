@@ -20,6 +20,7 @@ graph TD
         A2["WireGuard Server Management"]
         A3["Policy, Tag & Service Catalog Configuration"]
         A4["Full Peer Lifecycle & Destructive Actions"]
+        A5["Audit Logs & Security Trail Inspection"]
     end
 
     subgraph OperatorCaps ["Operator Capabilities"]
@@ -39,6 +40,7 @@ graph TD
 | Feature / Action | Admin | Operator |
 | :--- | :---: | :---: |
 | **Manage Users** (Create, Delete, Change Role) | Yes | No |
+| **Audit Logs** (View Security & System Event Trail) | Yes | No |
 | **Manage Servers** (Create, Delete, Reconfigure Interfaces) | Yes | No |
 | **Define Services & Tags** (Create, Modify, Delete) | Yes | No |
 | **Peer Provisioning** (Create, Edit, Delete Peers) | Yes | Yes |
@@ -203,6 +205,7 @@ curl -X DELETE "http://localhost:5070/api/auth/users/<user-uuid>" \
 
 ## Related Documentation
 
+- **[Inspect Audit Logs Guide](./audit-logs.md)** — Investigating security operations and administrative audit trails.
 - **[API Authentication Guide](../api/authentication.md)** — In-depth details on JWT tokens, claims, and lifetimes.
 - **[API Overview](../api/overview.md)** — Architectural model and base URL reference.
 - **[Create a Peer Guide](./create-peer.md)** — Day-to-day peer provisioning workflow.

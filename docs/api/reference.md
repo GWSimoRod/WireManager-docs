@@ -16,6 +16,7 @@ graph TD
     API --> Server["/api/server<br/>(WireGuard Interfaces)"]
     API --> Policy["/api/policy<br/>(Tags & Services)"]
     API --> Setup["/api/setup<br/>(System Bootstrapping)"]
+    API --> Audit["/api/Audit<br/>(Security Event Logs)"]
 ```
 
 ---
@@ -115,3 +116,14 @@ For in-depth guides with complete request/response schemas, JSON examples, and c
 | `POST` | `/api/setup` | Anonymous | First-time onboarding wizard (disabled once completed). |
 
 *See full documentation in [System Setup & Initialization API](./setup.md).*
+
+---
+
+### System Audit Logs (`/api/Audit`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/Audit` | Admin | Retrieves a paginated list of chronological system audit logs (supports `pageNumber`, `pageSize`). |
+
+*See full documentation in [How to Inspect Audit Logs and Security Events](../guides/audit-logs.md).*
+
