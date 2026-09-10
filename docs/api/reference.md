@@ -65,7 +65,7 @@ For in-depth guides with complete request/response schemas, JSON examples, and c
 | `POST` | `/api/peer/{id}/policies/{policyId}` | Admin, Operator | Attaches a policy tag to the peer and updates firewall rules. |
 | `DELETE` | `/api/peer/{id}/policies/{policyID}` | Admin, Operator | Removes a policy tag from the peer and updates firewall rules. |
 | `GET` | `/api/peer/{id}/live-stats` | Admin, Operator | Retrieves real-time transfer counters and handshake timestamp from kernel. |
-| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves up to 100 historical bandwidth consumption records. |
+| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves up to 100 historical bandwidth consumption records (supports `from` timestamp filter). |
 | `GET` | `/api/peer/authorized` | Anonymous | Reverse proxy forward-auth verification (`X-Forwarded-For`, `X-Forwarded-Host`). |
 
 *See full documentation in [Peer Management API](./peers.md).*

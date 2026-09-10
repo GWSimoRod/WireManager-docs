@@ -240,7 +240,7 @@ The following endpoints manage peers and their configurations:
 | `POST` | `/api/peer/{id}/policies/{policyId}` | Admin, Operator | Attaches a policy tag to the peer and updates firewall filtering rules. |
 | `DELETE` | `/api/peer/{id}/policies/{policyID}` | Admin, Operator | Removes a policy tag from the peer and updates firewall filtering rules. |
 | `GET` | `/api/peer/{id}/live-stats` | Admin, Operator | Retrieves real-time handshake and throughput metrics from the WireGuard runtime. |
-| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves historical transfer data points for usage graphing. |
+| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves historical transfer data points for usage graphing (supports `from` datetime filter). |
 | `GET` | `/api/peer/authorized` | Anonymous | Reverse proxy forward-auth verification for target domains. |
 
 :::info Complete API Specification

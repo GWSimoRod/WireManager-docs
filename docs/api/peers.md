@@ -70,7 +70,7 @@ The following endpoints are exposed by `PeerController`:
 | `POST` | `/api/peer/{id}/policies/{policyId}` | Admin, Operator | Associates a policy tag with the peer and triggers firewall re-evaluation. |
 | `DELETE` | `/api/peer/{id}/policies/{policyID}` | Admin, Operator | Removes a policy tag from the peer and triggers firewall re-evaluation. |
 | `GET` | `/api/peer/{id}/live-stats` | Admin, Operator | Fetches real-time transfer counters and latest handshake directly from the WireGuard runtime. |
-| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves up to 100 historical bandwidth consumption records from the database. |
+| `GET` | `/api/peer/{id}/stats` | Admin, Operator | Retrieves up to 100 historical bandwidth consumption records from the database, with optional starting datetime filtering (`from`). |
 | `GET` | `/api/peer/authorized` | Anonymous | Verifies whether a client IP is authorized to access a domain for reverse proxy forward-auth. |
 
 ---
@@ -486,15 +486,27 @@ Accept: application/json
 
 ### 13. Historical Usage History (`GET /api/peer/{id}/stats`)
 
-Returns up to 100 historical bandwidth consumption records collected by the background telemetry service, enabling usage trend graphing.
+Returns up to 100 historical bandwidth consumption records collected by the background telemetry service, enabling usage trend graphing. Accepts an optional `from` query parameter to filter telemetry samples starting from a specific point in time.
 
 #### Request
 ```http
-GET /api/peer/1/stats HTTP/1.1
+GET /api/peer/1/stats?from=2026-09-08T19:57:06Z HTTP/1.1
 Host: localhost:5070
 Authorization: Bearer <token>
 Accept: application/json
 ```
+
+#### Path Parameters
+
+| Parameter | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | Integer | `id > 0` | Unique identifier of the peer. |
+
+#### Query Parameters
+
+| Parameter | Type | Required | Default | Validation / Constraints | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `from` | String (ISO 8601 DateTime) | No | `null` | Valid ISO 8601 UTC timestamp | Starting timestamp from which sample records begin (`timestamp >= from`). When provided, returned samples start chronologically from this datetime. If omitted, returns the latest 100 records. |
 
 #### Response (`200 OK`)
 ```json
