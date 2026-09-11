@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'concepts/services',
         'concepts/access-policies',
         'concepts/external-auth',
+        'concepts/sso',
       ],
     },
 
@@ -34,6 +35,7 @@ const sidebars: SidebarsConfig = {
         'guides/configure-access',
         'guides/nginx-proxy-manager',
         'guides/user-management',
+        'guides/sso-configuration',
         'guides/audit-logs',
       ],
     },

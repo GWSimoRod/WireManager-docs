@@ -44,7 +44,13 @@ For in-depth guides with complete request/response schemas, JSON examples, and c
 | `POST` | `/api/auth/register` | Admin | Creates a new user account with assigned role (`Admin` or `Operator`). |
 | `GET` | `/api/auth/users` | Admin | Retrieves a paginated list of registered accounts. |
 | `DELETE` | `/api/auth/users/{uuid}` | Admin | Deletes a user account by UUID. |
-| `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's system role (`Admin` or `Operator`). |
+| `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's system role (`Admin`, `Operator`, or `Disabled`). |
+| `GET` | `/api/auth/sso/status` | Anonymous | Returns whether SSO/OIDC authentication is currently enabled. |
+| `GET` | `/api/auth/sso` | Admin | Retrieves the current SSO/OIDC configuration. |
+| `PUT` | `/api/auth/sso` | Admin | Updates the SSO/OIDC configuration settings. |
+| `GET` | `/api/auth/sso/login` | Anonymous | Initiates OpenID Connect authorization challenge redirect to the IdP. |
+| `GET` | `/api/auth/sso/callback` | OidcCookie | Processes IdP authentication callback and redirects with exchange token. |
+| `GET` | `/api/auth/sso/exchange` | `SSO_Exchange` Bearer | Exchanges temporary exchange token for a permanent session JWT. |
 
 *See full documentation in [API Authentication](./authentication.md).*
 

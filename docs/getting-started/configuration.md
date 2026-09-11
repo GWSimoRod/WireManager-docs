@@ -19,19 +19,28 @@ The MySQL container requires the following variables:
 
 ### Backend API (`wiremanager-api`)
 
-The backend connects to the database using these variables:
+The backend connects to the database and handles user authentication using these variables:
 
-| Variable  | Description                       | Default        |
-| --------- | --------------------------------- | -------------- |
-| `DB_HOST` | Hostname or IP of the MySQL server| `localhost`    |
-| `DB_PORT` | MySQL port                        | `3306`         |
-| `DB_NAME` | Database name                     | `wiremanager`  |
-| `DB_USER` | Database user                     | `wireadmin`    |
-| `DB_PASS` | Database password                 | `AdminPassword`|
+| Variable       | Description                                                                              | Default                 |
+| -------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
+| `DB_HOST`      | Hostname or IP of the MySQL server                                                       | `localhost`             |
+| `DB_PORT`      | MySQL port                                                                               | `3306`                  |
+| `DB_NAME`      | Database name                                                                            | `wiremanager`           |
+| `DB_USER`      | Database user                                                                            | `wireadmin`             |
+| `DB_PASS`      | Database password                                                                        | `AdminPassword`         |
+| `FRONTEND_URL` | Public URL or domain of the frontend web application (used for SSO/OIDC redirects)       | `http://localhost:3000` |
 
 :::caution
 
 The `DB_NAME`, `DB_USER`, and `DB_PASS` values **must match** the corresponding `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` values set on the database container. A mismatch will prevent the backend from connecting to the database.
+
+:::
+
+:::info SSO Redirection with FRONTEND_URL
+
+When Single Sign-On (SSO / OpenID Connect) is enabled, the backend API redirects the user's browser back to the web console after completing the Identity Provider callback (`/sso-login?token=...`).
+
+Set `FRONTEND_URL` to the public address where users access WireManager in their browsers — for example, `http://192.168.1.100:3002` or `https://vpn.yourdomain.com`.
 
 :::
 
@@ -52,6 +61,7 @@ environment:
   - DB_NAME=wiremanager
   - DB_USER=wireadmin
   - DB_PASS=MySecurePass456!
+  - FRONTEND_URL=http://192.168.1.100:3002
 ```
 
 :::tip

@@ -6,13 +6,14 @@ This guide explains how to manage administrative user accounts and configure Rol
 
 ## Role-Based Access Control (RBAC) Overview
 
-WireManager separates system responsibilities into two distinct administrative roles:
+WireManager separates system responsibilities into distinct user roles:
 
 ```mermaid
 graph TD
     subgraph Roles ["User Roles"]
         AdminRole["Admin Role<br/>(Red Badge)"]
         OperatorRole["Operator Role<br/>(Amber Badge)"]
+        DisabledRole["Disabled Role<br/>(Gray Badge)"]
     end
 
     subgraph AdminCaps ["Admin Capabilities"]
@@ -21,6 +22,7 @@ graph TD
         A3["Policy, Tag & Service Catalog Configuration"]
         A4["Full Peer Lifecycle & Destructive Actions"]
         A5["Audit Logs & Security Trail Inspection"]
+        A6["Single Sign-On (SSO / OIDC) Settings"]
     end
 
     subgraph OperatorCaps ["Operator Capabilities"]
@@ -30,24 +32,30 @@ graph TD
         O4["View Telemetry, Tags, and Services (Read-Only)"]
     end
 
+    subgraph DisabledCaps ["Disabled Capabilities"]
+        D1["No Access to Web Console or APIs"]
+    end
+
     AdminRole --> AdminCaps
     AdminRole --> OperatorCaps
     OperatorRole --> OperatorCaps
+    DisabledRole --> DisabledCaps
 ```
 
 ### Role Capabilities Matrix
 
-| Feature / Action | Admin | Operator |
-| :--- | :---: | :---: |
-| **Manage Users** (Create, Delete, Change Role) | Yes | No |
-| **Audit Logs** (View Security & System Event Trail) | Yes | No |
-| **Manage Servers** (Create, Delete, Reconfigure Interfaces) | Yes | No |
-| **Define Services & Tags** (Create, Modify, Delete) | Yes | No |
-| **Peer Provisioning** (Create, Edit, Delete Peers) | Yes | Yes |
-| **Distribute Configurations** (Download `.conf`, QR Code) | Yes | Yes |
-| **Toggle Peer Status** (Active / Inactive) | Yes | Yes |
-| **Monitor Telemetry** (Real-time throughput, graphs) | Yes | Yes |
-| **View Catalog** (Read-only view of Tags and Services) | Yes | Yes |
+| Feature / Action | Admin | Operator | Disabled |
+| :--- | :---: | :---: | :---: |
+| **Manage Users** (Create, Delete, Change Role) | Yes | No | No |
+| **SSO / OIDC Settings** (Configure OpenID Connect) | Yes | No | No |
+| **Audit Logs** (View Security & System Event Trail) | Yes | No | No |
+| **Manage Servers** (Create, Delete, Reconfigure Interfaces) | Yes | No | No |
+| **Define Services & Tags** (Create, Modify, Delete) | Yes | No | No |
+| **Peer Provisioning** (Create, Edit, Delete Peers) | Yes | Yes | No |
+| **Distribute Configurations** (Download `.conf`, QR Code) | Yes | Yes | No |
+| **Toggle Peer Status** (Active / Inactive) | Yes | Yes | No |
+| **Monitor Telemetry** (Real-time throughput, graphs) | Yes | Yes | No |
+| **View Catalog** (Read-only view of Tags and Services) | Yes | Yes | No |
 
 ---
 
@@ -125,10 +133,29 @@ You can escalate or demote an account's privileges without having to recreate th
 2. Click the role dropdown selector next to the user's name:
    - Choose **Admin** to grant full administrative capabilities.
    - Choose **Operator** to restrict the account to peer operations.
+   - Choose **Disabled** to immediately revoke all access and lock the account without deleting it.
 3. The role change takes effect immediately via `PATCH /api/auth/users/{uuid}/role/{role}`.
 
 :::caution Self-Demotion Protection
-WireManager prevents administrators from changing their own role from `Admin` to `Operator`. This built-in safety guard eliminates the risk of an administrator accidentally locking themselves out of the system.
+WireManager prevents administrators from changing their own role from `Admin` to `Operator` or `Disabled`. This built-in safety guard eliminates the risk of an administrator accidentally locking themselves out of the system.
+:::
+
+---
+
+## Approving and Activating SSO Provisioned Users
+
+When federated Single Sign-On (SSO / OIDC) is enabled, any employee who logs in via your Identity Provider for the first time is automatically registered in WireManager.
+
+To enforce Zero-Trust access control, WireManager assigns the **`Disabled`** role by default to all newly provisioned SSO accounts:
+
+1. The user will see an *"Account disabled / Contact administrator"* message upon their first login attempt.
+2. An Administrator opens the **Users** (`/users`) page.
+3. In the user directory, find the user's email or username — it will display a gray **Disabled** badge.
+4. Click the role dropdown selector and change their role to **Operator** (or **Admin**).
+5. The user can now log in immediately using the **Sign in with SSO** button.
+
+:::tip Lock Inactive Accounts
+Instead of permanently deleting an account when an employee is on leave or undergoing security review, you can simply change their role to `Disabled`. This revokes their active sessions and blocks further logins while preserving their account record and audit trails.
 :::
 
 ---
@@ -205,6 +232,8 @@ curl -X DELETE "http://localhost:5070/api/auth/users/<user-uuid>" \
 
 ## Related Documentation
 
+- **[Configure Single Sign-On Guide](./sso-configuration.md)** — Setting up federated login with Keycloak, Entra ID, and Authentik.
+- **[Single Sign-On Concepts](../concepts/sso.md)** — Two-phase token exchange and identity mapping.
 - **[Inspect Audit Logs Guide](./audit-logs.md)** — Investigating security operations and administrative audit trails.
 - **[API Authentication Guide](../api/authentication.md)** — In-depth details on JWT tokens, claims, and lifetimes.
 - **[API Overview](../api/overview.md)** — Architectural model and base URL reference.

@@ -68,24 +68,26 @@ Each generated JWT payload embeds the following security claims:
 
 ## Role-Based Access Control (RBAC)
 
-WireManager distinguishes between three privilege levels:
+WireManager distinguishes between the following privilege levels:
 
 | Role | Scope | Permissions |
 | :--- | :--- | :--- |
-| **Anonymous** | Public | Access limited to `/api/setup` (initial onboarding), `/api/auth/login`, and `/api/peer/authorized` (reverse proxy verification). |
+| **Anonymous** | Public | Access limited to `/api/setup` (initial onboarding), `/api/auth/login`, `/api/auth/sso/status`, `/api/auth/sso/login`, and `/api/peer/authorized` (reverse proxy verification). |
+| **Disabled** | Inactive / Locked | Access blocked across all application endpoints. Assigned by default to newly provisioned SSO users until explicitly approved by an Administrator. |
 | **Operator** | Operational Management | Can create and update peers, toggle peer active/inactive states, download `.conf` profiles, generate QR codes, inspect real-time bandwidth telemetry, and read policy tags. |
-| **Admin** | Full System Administration | All Operator permissions plus: server deployment, user account creation and deletion, role assignment, policy tag creation, and protected service catalog modifications. |
+| **Admin** | Full System Administration | All Operator permissions plus: server deployment, user account creation and deletion, role assignment, policy tag creation, SSO/OIDC configuration, and audit logs. |
+| *`SSO_Exchange`* | Internal System Flow | Short-lived (1-minute) token role used exclusively to complete the handoff from `/sso-login` to `/api/auth/sso/exchange`. |
 
 ### Self-Protection Safeguards
 To prevent accidental administrative lockout:
 - **Self-Deletion Guard**: Administrators cannot delete their own account.
-- **Self-Demotion Guard**: Administrators cannot demote their own account role from `Admin` to `Operator`.
+- **Self-Demotion Guard**: Administrators cannot demote their own account role from `Admin` to `Operator` or `Disabled`.
 
 ---
 
 ## Authentication & User Management Endpoints
 
-The following endpoints handle authentication and operator identities:
+The following endpoints handle credential authentication, user management, and federated Single Sign-On (SSO):
 
 | Method | Endpoint | Authorization | Description |
 | :--- | :--- | :--- | :--- |
@@ -93,7 +95,13 @@ The following endpoints handle authentication and operator identities:
 | `POST` | `/api/auth/register` | Admin | Registers a new user account with an assigned role (`Admin` or `Operator`). |
 | `GET` | `/api/auth/users` | Admin | Retrieves a paginated list of system accounts (excludes the calling user). |
 | `DELETE` | `/api/auth/users/{uuid}` | Admin | Deletes a user account by UUID. |
-| `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's role (`Admin` or `Operator`). |
+| `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's role (`Admin`, `Operator`, or `Disabled`). |
+| `GET` | `/api/auth/sso/status` | Anonymous | Returns whether SSO/OIDC authentication is currently enabled. |
+| `GET` | `/api/auth/sso` | Admin | Retrieves the current SSO/OIDC configuration. |
+| `PUT` | `/api/auth/sso` | Admin | Updates the SSO/OIDC configuration settings. |
+| `GET` | `/api/auth/sso/login` | Anonymous | Initiates the OpenID Connect authorization challenge redirect to the IdP. |
+| `GET` | `/api/auth/sso/callback` | OidcCookie | Processes IdP authentication callback and redirects to the frontend exchange page. |
+| `GET` | `/api/auth/sso/exchange` | `SSO_Exchange` Bearer | Exchanges temporary exchange token for a permanent session JWT. |
 
 ---
 
@@ -240,7 +248,127 @@ Content-Length: 0
 
 ---
 
-### 6. Using the Bearer Token
+### 6. Get SSO Status (`GET /api/auth/sso/status`)
+
+Checks whether OpenID Connect Single Sign-On is enabled on the system. Used by login interfaces to conditionally render the "Sign in with SSO" button.
+
+#### Request
+```http
+GET /api/auth/sso/status HTTP/1.1
+Host: localhost:5070
+Accept: application/json
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "enabled": true
+}
+```
+
+---
+
+### 7. Get SSO Configuration (`GET /api/auth/sso`)
+
+Retrieves the current OpenID Connect federated authentication configuration. **Requires Admin role.**
+
+#### Request
+```http
+GET /api/auth/sso HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <admin_token>
+Accept: application/json
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "id": 1,
+  "oidcEnabled": true,
+  "oidcAuthority": "https://auth.example.com/realms/wiremanager",
+  "oidcClientId": "wiremanager",
+  "oidcClientSecret": "sec_98f7a1b2c3d4e5f6..."
+}
+```
+
+---
+
+### 8. Update SSO Configuration (`PUT /api/auth/sso`)
+
+Updates or saves the OpenID Connect federated settings. Changes take effect dynamically in memory. **Requires Admin role.**
+
+#### Request
+```http
+PUT /api/auth/sso HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "oidcEnabled": true,
+  "oidcAuthority": "https://auth.example.com/realms/wiremanager",
+  "oidcClientId": "wiremanager",
+  "oidcClientSecret": "sec_98f7a1b2c3d4e5f6..."
+}
+```
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `oidcEnabled` | Boolean | Yes | Enables or disables SSO authentication. |
+| `oidcAuthority` | String (URI) | When enabled | Base discovery URL of the OIDC Identity Provider. |
+| `oidcClientId` | String | When enabled | Client Identifier configured in the Identity Provider. |
+| `oidcClientSecret` | String | When enabled | Confidential client secret from the Identity Provider. |
+
+#### Response (`200 OK`)
+```http
+HTTP/1.1 200 OK
+Content-Length: 0
+```
+
+---
+
+### 9. Initiate SSO Challenge (`GET /api/auth/sso/login`)
+
+Initiates the OpenID Connect Authorization Code with PKCE challenge.
+
+#### Request
+```http
+GET /api/auth/sso/login HTTP/1.1
+Host: localhost:5070
+```
+
+#### Response (`302 Found`)
+Redirects the user's browser to the Identity Provider's authorization endpoint.
+
+---
+
+### 10. Exchange SSO Token (`GET /api/auth/sso/exchange`)
+
+Exchanges the temporary single-use token (role `SSO_Exchange`, 1-minute expiration) generated by `/api/auth/sso/callback` for a permanent 2-hour session JWT containing the user's actual role.
+
+#### Request
+```http
+GET /api/auth/sso/exchange HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <temp_exchange_token>
+Accept: application/json
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "date": "2026-09-11 13:00:00"
+}
+```
+
+:::note Account Activation Gate
+If the user account is in the `Disabled` state (the default for new SSO registrations), the frontend exchange route intercepts the token claims and blocks session creation, directing the user to contact an administrator for role assignment.
+:::
+
+---
+
+### 11. Using the Bearer Token
 
 Attach the returned token to the `Authorization` header with the `Bearer` prefix for all authenticated API requests:
 
@@ -360,6 +488,8 @@ Because tokens have a 2-hour lifespan, long-running automation scripts or sideca
 
 ## Related Documentation
 
+- **[Single Sign-On (SSO / OIDC) Concept](../concepts/sso.md)** — Architectural model, two-phase token exchange, and Zero-Trust user approval.
+- **[Configure SSO Guide](../guides/sso-configuration.md)** — Step-by-step instructions for Keycloak, Entra ID, and Authentik.
 - **[API Overview](./overview.md)** — Architectural model, base URLs, and functional domains.
 - **[Peer Management API](./peers.md)** — Complete endpoint reference for client peers and telemetry.
 - **[API Reference](./reference.md)** — Comprehensive catalog of all available API endpoints.

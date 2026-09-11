@@ -83,6 +83,7 @@ services:
       - DB_NAME=
       - DB_USER=
       - DB_PASS=
+      - FRONTEND_URL=
 
     volumes:
       - /path/into/server:/app/config
@@ -143,6 +144,12 @@ services:
 This documentation uses a static network configuration inside the Compose file to prevent containers from receiving different IP addresses after a restart.
 
 Stable IP addresses are required for the future External Authentication integration with Nginx Proxy Manager, covered later in this documentation.
+
+:::
+
+:::tip
+
+The `FRONTEND_URL` environment variable defines the public URL or domain where the WireManager web interface is reachable (e.g., `http://<server-ip>:3002` or `https://vpn.example.com`). The backend API uses this URL to redirect the user's browser back to the frontend (`/sso-login`) after completing Single Sign-On (SSO / OpenID Connect) authentication.
 
 :::
 
