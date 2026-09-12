@@ -84,6 +84,7 @@ services:
       - DB_USER=
       - DB_PASS=
       - FRONTEND_URL=
+      - BACKEND_URL=
 
     volumes:
       - /path/into/server:/app/config
@@ -112,6 +113,7 @@ services:
 
     environment:
       - API_BASE_URL=http://wiremanager-api:8080
+      - BACKEND_URL=
 
     networks:
       wiremanager_net:
@@ -147,9 +149,13 @@ Stable IP addresses are required for the future External Authentication integrat
 
 :::
 
-:::tip
+:::tip SSO Environment Variables (FRONTEND_URL & BACKEND_URL)
 
-The `FRONTEND_URL` environment variable defines the public URL or domain where the WireManager web interface is reachable (e.g., `http://<server-ip>:3002` or `https://vpn.example.com`). The backend API uses this URL to redirect the user's browser back to the frontend (`/sso-login`) after completing Single Sign-On (SSO / OpenID Connect) authentication.
+When configuring Single Sign-On (SSO / OpenID Connect), set the following URL environment variables:
+
+- **`FRONTEND_URL`** (in `wiremanager-api`): The public URL or domain where the WireManager web interface is reachable (e.g., `http://<server-ip>:3002` or `https://wireguard.example.com`). The backend API uses this to redirect the user's browser back to the frontend (`/sso-login`) after completing authentication with the Identity Provider.
+- **`BACKEND_URL`** (in `wiremanager-api`): The public URL or domain of the backend API (e.g., `http://<server-ip>:5070` or `https://api-wiremanager.example.com`). It is used by ASP.NET Core OpenID Connect to configure the exact `RedirectUri` (`${BACKEND_URL}/signin-oidc`) sent to the Identity Provider.
+- **`BACKEND_URL`** (in `wiremanager-web`): The public URL of the backend API where the user's browser is redirected to initiate the SSO login challenge (`/api/Auth/sso/login`). Unlike `API_BASE_URL` (which is used internally between containers over the Docker network), `BACKEND_URL` must be accessible from the client's browser.
 
 :::
 

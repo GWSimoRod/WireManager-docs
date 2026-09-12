@@ -59,11 +59,12 @@ sequenceDiagram
     participant DB as MySQL Database
 
     User->>Web: Navigate to /login and click "Sign in with SSO"
-    Web->>API: GET /api/auth/sso/login
-    API-->>User: 302 Redirect to IdP Authorization URL (PKCE)
+    Web-->>User: 302 Redirect to {BACKEND_URL}/api/auth/sso/login
+    User->>API: GET /api/auth/sso/login
+    API-->>User: 302 Redirect to IdP Auth URL (PKCE, redirect_uri={BACKEND_URL}/signin-oidc)
     
     User->>IdP: Authenticate (credentials, MFA, etc.)
-    IdP-->>User: 302 Redirect to API callback (/signin-oidc) with auth code
+    IdP-->>User: 302 Redirect to {BACKEND_URL}/signin-oidc with auth code
     
     User->>API: GET /signin-oidc (code, state)
     API->>IdP: Exchange auth code for ID & Access Tokens
@@ -84,7 +85,7 @@ sequenceDiagram
     API-->>User: 302 Redirect to {FRONTEND_URL}/sso-login?token={temp_jwt}
 
     User->>Web: Browser loads /sso-login?token={temp_jwt}
-    Web->>API: GET /api/auth/sso/exchange (Header: Bearer {temp_jwt})
+    Web->>API: GET /api/auth/sso/exchange (via API_BASE_URL, Header: Bearer {temp_jwt})
     Note over API: Verify SSO_Exchange role and retrieve actual user record
     
     alt User Role == "Disabled"
@@ -171,25 +172,45 @@ WireManager reconfigures its internal ASP.NET Core OpenID Connect options dynami
 
 ---
 
-## Environment Requirements: `FRONTEND_URL`
+## Environment Requirements: `FRONTEND_URL` & `BACKEND_URL`
 
-For the SSO handoff to complete successfully, the backend API must know the public URL of the web interface. 
+For Single Sign-On to operate correctly across distributed container networks and reverse proxies, both the backend API and frontend web application require dedicated URL environment variables:
 
-In your `docker-compose.yaml` under `wiremanager-api`, set:
+| Container | Variable | Direction / Scope | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`wiremanager-api`** | `FRONTEND_URL` | Public / Browser | URL where the web interface is accessible. The API issues an HTTP 302 redirect here (`/sso-login?token={temp_jwt}`) after completing OIDC token validation. |
+| **`wiremanager-api`** | `BACKEND_URL` | Public / IdP | Public URL of the backend API. Used by ASP.NET Core OpenID Connect to construct the exact `RedirectUri` (`${BACKEND_URL}/signin-oidc`) sent to the Identity Provider during authorization. |
+| **`wiremanager-web`** | `API_BASE_URL` | Internal Docker Network | Internal address of the API container (e.g. `http://wiremanager-api:8080`). Used by the Next.js server runtime for backend API proxying. |
+| **`wiremanager-web`** | `BACKEND_URL` | Public / Browser | Public URL of the backend API. Used by the Next.js routes (`/api/auth/sso/status` and `/api/auth/sso/login`) to redirect the user's browser to the backend API (`/api/Auth/sso/login`). |
+
+### Docker Compose Example
+
+In your `docker-compose.yaml`, configure both containers with their appropriate URLs:
 
 ```yaml
-environment:
-  - FRONTEND_URL=http://<server-ip>:3002
+services:
+  # WireManager Backend API
+  wiremanager-api:
+    image: ghcr.io/gwsimorod/wiremanager:latest
+    environment:
+      - FRONTEND_URL=https://wireguard.netrod.xyz # or http://<server-ip>:3002
+      - BACKEND_URL=https://api-wiremanager.netrod.xyz # or http://<server-ip>:5070
+
+  # WireManager Frontend Web UI
+  wiremanager-web:
+    image: ghcr.io/gwsimorod/wiremanager-web:latest
+    environment:
+      - API_BASE_URL=http://wiremanager-api:8080
+      - BACKEND_URL=https://api-wiremanager.netrod.xyz # or http://<server-ip>:5070
 ```
 
-Or, if WireManager is hosted behind a reverse proxy with TLS:
+:::caution Why BACKEND_URL is Required in Containerized Setups
+In Docker deployments, `API_BASE_URL` is configured to `http://wiremanager-api:8080`, allowing the Next.js server to communicate with the backend over the private bridge network. However, the client's browser operates outside the Docker network and cannot resolve `wiremanager-api`.
 
-```yaml
-environment:
-  - FRONTEND_URL=https://vpn.example.com
-```
-
-If `FRONTEND_URL` is omitted, the API defaults to `http://localhost:3000`, which is suitable for local development but will cause redirect failures in production environments.
+By setting `BACKEND_URL`:
+1. The frontend correctly redirects the user's browser to the publicly accessible API endpoint.
+2. The backend generates the canonical public redirect URI (`${BACKEND_URL}/signin-oidc`) expected by your Identity Provider, avoiding `redirect_uri_mismatch` errors behind reverse proxies (such as Nginx Proxy Manager, Traefik, or Caddy).
+:::
 
 ---
 

@@ -29,6 +29,7 @@ The backend connects to the database and handles user authentication using these
 | `DB_USER`      | Database user                                                                            | `wireadmin`             |
 | `DB_PASS`      | Database password                                                                        | `AdminPassword`         |
 | `FRONTEND_URL` | Public URL or domain of the frontend web application (used for SSO/OIDC redirects)       | `http://localhost:3000` |
+| `BACKEND_URL`  | Public URL or domain of the backend API (used for OIDC redirect URI generation)          | None / Automatic        |
 
 :::caution
 
@@ -36,11 +37,12 @@ The `DB_NAME`, `DB_USER`, and `DB_PASS` values **must match** the corresponding 
 
 :::
 
-:::info SSO Redirection with FRONTEND_URL
+:::info SSO Configuration (FRONTEND_URL & BACKEND_URL)
 
-When Single Sign-On (SSO / OpenID Connect) is enabled, the backend API redirects the user's browser back to the web console after completing the Identity Provider callback (`/sso-login?token=...`).
+When Single Sign-On (SSO / OpenID Connect) is enabled, two URL environment variables coordinate the browser navigation between the frontend, backend, and your Identity Provider:
 
-Set `FRONTEND_URL` to the public address where users access WireManager in their browsers — for example, `http://192.168.1.100:3002` or `https://vpn.yourdomain.com`.
+- **`FRONTEND_URL`**: The public address where users access WireManager in their browsers (e.g., `http://192.168.1.100:3002` or `https://wireguard.netrod.xyz`). After completing the authentication challenge with the Identity Provider, the backend API redirects the user's browser back to this URL (`/sso-login?token=...`).
+- **`BACKEND_URL`**: The public address of the backend API (e.g., `http://192.168.1.100:5070` or `https://api-wiremanager.netrod.xyz`). The backend uses this to generate the exact OpenID Connect `RedirectUri` (`${BACKEND_URL}/signin-oidc`) sent to your Identity Provider.
 
 :::
 
@@ -61,7 +63,8 @@ environment:
   - DB_NAME=wiremanager
   - DB_USER=wireadmin
   - DB_PASS=MySecurePass456!
-  - FRONTEND_URL=http://192.168.1.100:3002
+  - FRONTEND_URL=https://wireguard.netrod.xyz # or http://192.168.1.100:3002
+  - BACKEND_URL=https://api-wiremanager.netrod.xyz # or http://192.168.1.100:5070
 ```
 
 :::tip
@@ -72,22 +75,26 @@ When using Docker Compose with a shared network, use the **container name** (e.g
 
 ### Frontend (`wiremanager-web`)
 
-The frontend requires the backend API URL:
+The frontend requires the backend API configuration:
 
-| Variable       | Description                                      | Default                       |
-| -------------- | ------------------------------------------------ | ----------------------------- |
-| `API_BASE_URL` | Full URL of the backend API (protocol + host + port) | `http://localhost:7254`    |
+| Variable       | Description                                                                              | Default                 |
+| -------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
+| `API_BASE_URL` | Internal URL of the backend API (used for server-side Next.js proxying)                 | `http://localhost:7254` |
+| `BACKEND_URL`  | Public URL of the backend API (used by the browser for SSO login redirects)              | Falls back to `API_BASE_URL` |
 
-In a Docker Compose setup, this should point to the backend container's internal address:
+In a Docker Compose setup, configure both the internal address and the public API URL:
 
 ```yaml
 environment:
   - API_BASE_URL=http://wiremanager-api:8080
+  - BACKEND_URL=https://api-wiremanager.netrod.xyz # or http://192.168.1.100:5070
 ```
 
-:::info
+:::info Internal vs. Public Backend Communication
 
-The frontend never exposes the backend API directly to the browser. All requests from the client are proxied through the Next.js server-side routes, which forward them to the backend with the appropriate authentication headers.
+WireManager uses a Backend-for-Frontend (BFF) architecture with distinct network paths:
+1. **Internal API Calls (`API_BASE_URL`)**: Next.js server components and route handlers proxy API requests directly to the backend over the internal Docker network (`http://wiremanager-api:8080`). This traffic never leaves the Docker bridge network.
+2. **SSO Redirection (`BACKEND_URL`)**: For Single Sign-On, the user's web browser must directly initiate the authentication flow with the backend API (`/api/Auth/sso/login`) to receive session cookies and trigger the OpenID Connect challenge. Because the user's browser runs outside the Docker network, it cannot resolve `http://wiremanager-api:8080`. Setting `BACKEND_URL` ensures the browser is redirected to the public backend endpoint.
 
 :::
 
