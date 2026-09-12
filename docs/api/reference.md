@@ -38,13 +38,21 @@ For in-depth guides with complete request/response schemas, JSON examples, and c
 
 ### Authentication & Users (`/api/auth`)
 
+:::note Rate Limiting Protection
+All endpoints under `/api/auth` are guarded by an ASP.NET Core sliding-window rate limiter configured for **15 requests per minute** (6 segments of 10s, queue limit 0). Exceeding this limit returns HTTP `429 Too Many Requests`.
+:::
+
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Anonymous | Authenticates credentials and returns a signed JWT Bearer token. |
+| `POST` | `/api/auth/login` | Anonymous | Authenticates credentials and returns a signed JWT Bearer token (or intermediate MFA token). |
 | `POST` | `/api/auth/register` | Admin | Creates a new user account with assigned role (`Admin` or `Operator`). |
 | `GET` | `/api/auth/users` | Admin | Retrieves a paginated list of registered accounts. |
 | `DELETE` | `/api/auth/users/{uuid}` | Admin | Deletes a user account by UUID. |
 | `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's system role (`Admin`, `Operator`, or `Disabled`). |
+| `POST` | `/api/auth/mfa/enable` | Admin, Operator | Enables Multi-Factor Authentication and returns TOTP secret and setup URI. |
+| `POST` | `/api/auth/mfa/disable` | Admin, Operator | Disables Multi-Factor Authentication for the authenticated local user. |
+| `POST` | `/api/auth/mfa/verify` | `mfa` Bearer | Verifies 6-digit TOTP code and exchanges intermediate MFA token for session JWT. |
+| `GET` | `/api/auth/mfa/enabled` | Admin, Operator | Retrieves MFA activation status and identity provider linkage for the user. |
 | `GET` | `/api/auth/sso/status` | Anonymous | Returns whether SSO/OIDC authentication is currently enabled. |
 | `GET` | `/api/auth/sso` | Admin | Retrieves the current SSO/OIDC configuration. |
 | `PUT` | `/api/auth/sso` | Admin | Updates the SSO/OIDC configuration settings. |

@@ -88,15 +88,25 @@ sequenceDiagram
 1. **Anonymous / Public Endpoints**:
    - `GET /api/setup/status` — Checks if the instance is initialized.
    - `POST /api/setup` — Initial setup wizard (disabled once completed).
-   - `POST /api/auth/login` — Authenticates credentials and returns a JWT Bearer token.
+   - `POST /api/auth/login` — Authenticates credentials and returns a JWT Bearer token (or intermediate MFA token).
    - `GET /api/peer/authorized` — Reverse proxy forward-auth verification (used by Nginx Proxy Manager).
-2. **Operator Role**:
-   - Authorized to manage peers, toggle peer states, download `.conf` profiles, generate QR codes, inspect telemetry, and read policy tags.
-3. **Admin Role**:
-   - Full system privileges, including server management, user account creation, service definition, tag creation, and destructive resource deletions.
+2. **Intermediate Roles**:
+   - `SSO_Exchange` — Short-lived (1-minute) token role used to complete federated OIDC Single Sign-On handoff.
+   - `mfa` — Intermediate token role required by `POST /api/auth/mfa/verify` when TOTP two-factor authentication is active.
+3. **Operator Role**:
+   - Authorized to manage peers, toggle peer states, download `.conf` profiles, generate QR codes, inspect telemetry, configure personal MFA, and read policy tags.
+4. **Admin Role**:
+   - Full system privileges, including server management, user account creation, service definition, tag creation, SSO/OIDC configuration, and destructive resource deletions.
+
+### Rate Limiting Protection
+
+To protect sensitive authentication and account operations against credential stuffing, brute-forcing, and TOTP enumeration:
+- **Scope**: All routes under `/api/auth` (login, registration, SSO handoff, MFA enable/verify).
+- **Algorithm**: Sliding window limiter (15 requests per 1-minute window across 6 segments of 10 seconds, zero queue).
+- **Rejection**: Violations immediately return HTTP `429 Too Many Requests`.
 
 :::info Detailed Authentication Guide
-For a deep dive into JWT token handling, login payloads, and token refresh workflows, consult the dedicated **[Authentication Guide](./authentication.md)**.
+For a deep dive into JWT token handling, login payloads, MFA verification, rate limiting, and token refresh workflows, consult the dedicated **[Authentication Guide](./authentication.md)**.
 :::
 
 ---

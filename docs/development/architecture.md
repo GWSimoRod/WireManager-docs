@@ -68,9 +68,10 @@ WireManager's backend adheres to clean layered architecture and dependency inver
 ```mermaid
 graph TD
     subgraph PresentationLayer ["WireManager.API (Presentation Layer)"]
-        Controllers["API Controllers<br/>(Server, Peer, Policy, Auth, Setup)"]
+        Controllers["API Controllers<br/>(Server, Peer, Policy, Auth, Setup, Audit)"]
         Filters["Action Filters<br/>(RequireSetupAttribute)"]
         AuthMiddleware["JWT Bearer Authentication Middleware"]
+        RateLimiter["Rate Limiter Middleware<br/>(Sliding Window 15 req/m)"]
     end
 
     subgraph ServiceLayer ["WireManager.Core (Service & Domain Layer)"]
@@ -81,6 +82,9 @@ graph TD
         IWG["IWireguardOps"]
         ISetup["ISetupServices"]
         IAuth["IAuthServices"]
+        IMFA["IMFAServices"]
+        ISSO["ISSOServices"]
+        IToken["ITokenServices"]
     end
 
     subgraph DataLayer ["WireManager.Core (Data & Infrastructure)"]
@@ -90,6 +94,7 @@ graph TD
 
     Controllers --> Filters
     Controllers --> AuthMiddleware
+    Controllers --> RateLimiter
     Controllers --> ServiceLayer
     ServiceLayer --> DbContext
     ServiceLayer --> Utils
@@ -105,7 +110,10 @@ graph TD
 | [`IFirewallServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/IFirewallServices.cs) | `FirewallServices` | Compiles peer-service policy matrices into low-level Linux `iptables` packet-filtering rules within custom interface sub-chains. |
 | [`IWireguardOps`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/IWireguardOps.cs) | `WireguardOps` | Interacts with the Docker daemon via `Docker.DotNet` to execute `wg-quick`, `wg syncconf`, and `ip link` commands inside the WireGuard container. |
 | [`ISetupServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/ISetupServices.cs) | `SetupServices` | System bootstrapping readiness checks (`IsSystemConfiguredAsync`), initial admin user creation, and environment configuration persistence. |
-| [`IAuthServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/IAuthServices.cs) | `AuthServices` | BCrypt password hashing, credential verification, JWT token issuance (HS256), and administrative user management. |
+| [`IAuthServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/IAuthServices.cs) | `AuthServices` | BCrypt password hashing, credential verification, and administrative user management. |
+| [`IMFAServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/IMFAServices.cs) | `MFAServices` | TOTP two-factor authentication secret generation (Base32), encrypted storage via DataProtection, verification window evaluation (±30s), and MFA lifecycle management. |
+| [`ISSOServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/ISSOServices.cs) | `SSOServices` | OpenID Connect (OIDC) federated SSO authentication, dynamic options configuration, identity claim extraction, and temporary-to-permanent JWT token exchange. |
+| [`ITokenServices`](file:///c:/Users/simon/source/repos/WireManager/WireManager/Interfaces/ITokenServices.cs) | `TokenServices` | JWT token issuance (HS256), cryptographic signing, claim formatting, role overrides, and secure TOTP secret generation. |
 
 ---
 

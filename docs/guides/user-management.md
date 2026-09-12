@@ -219,6 +219,32 @@ curl -X DELETE "http://localhost:5070/api/auth/users/<user-uuid>" \
 
 ---
 
+## Multi-Factor Authentication (MFA / 2FA) for Local Accounts
+
+To protect administrative and operator accounts against credential compromise, WireManager supports Time-Based One-Time Passwords (TOTP, RFC 6238).
+
+### Enabling MFA via the Web Console
+1. In the top navigation bar or sidebar, open **Settings** (`/settings`).
+2. Under the **Two-Factor Authentication (MFA)** section, click **Enable MFA**.
+3. Scan the displayed QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden, etc.) or manually copy the Base32 secret key.
+4. Two-factor authentication is now active on your account.
+
+### Two-Step Login Flow
+Once MFA is active on a local account:
+1. Entering your username and password on `/login` validates your credentials and produces an intermediate token restricted to the `mfa` role.
+2. The web console prompts for your current 6-digit TOTP code on the `/mfa` screen.
+3. Submitting the code calls `POST /api/auth/mfa/verify`, which validates the one-time code and exchanges the intermediate token for a permanent session JWT with your operational role (`Admin` or `Operator`).
+
+:::note SSO Accounts and MFA
+Users authenticating via Single Sign-On (OIDC) manage two-factor authentication directly with their upstream Identity Provider (Keycloak, Entra ID, Authentik). The local MFA configuration is disabled for SSO accounts (`Identities cannot enable mfa`).
+:::
+
+:::tip Rate Limiting Protection
+All authentication and MFA verification endpoints are guarded by a sliding-window rate limiter restricted to **15 requests per minute**. Exceeding this quota triggers HTTP `429 Too Many Requests` to prevent automated brute-forcing of credentials or one-time codes.
+:::
+
+---
+
 ## Best Practices & Security Recommendations
 
 :::tip Administrative Security Checklist
@@ -226,6 +252,7 @@ curl -X DELETE "http://localhost:5070/api/auth/users/<user-uuid>" \
 2. **Dedicated Service Accounts**: For automated CI/CD pipelines or scripts that provision VPN peers, create a dedicated `Operator` account rather than using a personal administrator login.
 3. **Prompt Offboarding**: Delete user accounts immediately upon an employee's departure. WireManager checks user validity during token generation and policy enforcement.
 4. **Strong Passwords**: Enforce a strong password policy (at least 12 characters with a mix of letters, numbers, and symbols) for all accounts.
+5. **Enforce Multi-Factor Authentication**: Encourage all local Admin and Operator users to enable TOTP two-factor authentication to prevent unauthorized console access.
 :::
 
 ---

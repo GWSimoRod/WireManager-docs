@@ -74,9 +74,10 @@ WireManager distinguishes between the following privilege levels:
 | :--- | :--- | :--- |
 | **Anonymous** | Public | Access limited to `/api/setup` (initial onboarding), `/api/auth/login`, `/api/auth/sso/status`, `/api/auth/sso/login`, and `/api/peer/authorized` (reverse proxy verification). |
 | **Disabled** | Inactive / Locked | Access blocked across all application endpoints. Assigned by default to newly provisioned SSO users until explicitly approved by an Administrator. |
-| **Operator** | Operational Management | Can create and update peers, toggle peer active/inactive states, download `.conf` profiles, generate QR codes, inspect real-time bandwidth telemetry, and read policy tags. |
+| **Operator** | Operational Management | Can create and update peers, toggle peer active/inactive states, download `.conf` profiles, generate QR codes, inspect real-time bandwidth telemetry, configure personal MFA, and read policy tags. |
 | **Admin** | Full System Administration | All Operator permissions plus: server deployment, user account creation and deletion, role assignment, policy tag creation, SSO/OIDC configuration, and audit logs. |
 | *`SSO_Exchange`* | Internal System Flow | Short-lived (1-minute) token role used exclusively to complete the handoff from `/sso-login` to `/api/auth/sso/exchange`. |
+| *`mfa`* | Internal System Flow | Intermediate token role issued upon successful credential verification when MFA is enabled. Restricts access exclusively to `POST /api/auth/mfa/verify`. |
 
 ### Self-Protection Safeguards
 To prevent accidental administrative lockout:
@@ -85,17 +86,42 @@ To prevent accidental administrative lockout:
 
 ---
 
+## Rate Limiting Protection
+
+To protect against credential brute-forcing, password guessing, automated dictionary attacks, and TOTP code enumeration, all endpoints under the `/api/auth` controller are secured by an ASP.NET Core sliding-window rate limiter (`[EnableRateLimiting("Auth")]`).
+
+### Policy Specifications
+
+| Parameter | Configuration | Description |
+| :--- | :--- | :--- |
+| **Algorithm** | Sliding Window Limiter | Partitions time into sliding segments to smooth request quotas across window boundaries |
+| **Permit Limit** | `15` Requests | Maximum allowed requests within the active window |
+| **Window Duration** | `1 Minute` (`60s`) | Total sliding window duration |
+| **Segments Per Window** | `6` (10 seconds / segment) | Granularity for sliding expiration calculations |
+| **Queue Limit** | `0` | Requests exceeding the limit are rejected immediately without queueing |
+| **Rejection Status** | `429 Too Many Requests` | Returned whenever the request quota is exceeded |
+
+:::warning Rate Limiter Thresholds
+Automated scripts, tests, or integrations calling `/api/auth/login`, `/api/auth/mfa/verify`, or user management routes must respect the 15 req/min threshold. If a client receives an HTTP `429 Too Many Requests` response, it should pause execution and apply exponential backoff before retrying.
+:::
+
+---
+
 ## Authentication & User Management Endpoints
 
-The following endpoints handle credential authentication, user management, and federated Single Sign-On (SSO):
+The following endpoints handle credential authentication, user management, Multi-Factor Authentication (MFA), and federated Single Sign-On (SSO):
 
 | Method | Endpoint | Authorization | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Anonymous | Authenticates credentials and returns a signed JWT Bearer token. |
+| `POST` | `/api/auth/login` | Anonymous | Authenticates credentials and returns a signed JWT Bearer token (or intermediate MFA token). |
 | `POST` | `/api/auth/register` | Admin | Registers a new user account with an assigned role (`Admin` or `Operator`). |
 | `GET` | `/api/auth/users` | Admin | Retrieves a paginated list of system accounts (excludes the calling user). |
 | `DELETE` | `/api/auth/users/{uuid}` | Admin | Deletes a user account by UUID. |
 | `PATCH` | `/api/auth/users/{uuid}/role/{role}` | Admin | Updates a user's role (`Admin`, `Operator`, or `Disabled`). |
+| `POST` | `/api/auth/mfa/enable` | Admin, Operator | Enables Multi-Factor Authentication and returns TOTP secret and setup URI. |
+| `POST` | `/api/auth/mfa/disable` | Admin, Operator | Disables Multi-Factor Authentication for the authenticated local user. |
+| `POST` | `/api/auth/mfa/verify` | `mfa` Bearer | Verifies 6-digit TOTP code and exchanges intermediate MFA token for session JWT. |
+| `GET` | `/api/auth/mfa/enabled` | Admin, Operator | Returns whether MFA is active and whether user is an external SSO identity. |
 | `GET` | `/api/auth/sso/status` | Anonymous | Returns whether SSO/OIDC authentication is currently enabled. |
 | `GET` | `/api/auth/sso` | Admin | Retrieves the current SSO/OIDC configuration. |
 | `PUT` | `/api/auth/sso` | Admin | Updates the SSO/OIDC configuration settings. |
@@ -129,12 +155,30 @@ Content-Type: application/json
 | `password` | String | Yes | Max 128 chars | The account plaintext password. |
 
 #### Response (`200 OK`)
+
+**Standard Authentication (MFA Disabled):**
+Returns a permanent 2-hour session JWT token populated with the user's operational role (`Admin` or `Operator`):
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImEyYjNjNGQ1LWU2ZjctODlhYi05YzA5LTEyMzQ1Njc4OTBhYiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhZG1pbiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzI1NDY4MDAwLCJpc3MiOiJXaXJlTWFuYWdlciIsImF1ZCI6IldpcmVNYW5hZ2VyQ2xpZW50cyJ9...",
   "date": "2026-09-04 15:30:00"
 }
 ```
+
+**MFA Challenge Required (MFA Enabled):**
+When TOTP Multi-Factor Authentication is active for the local account, the returned JWT embeds the intermediate `mfa` role claim:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...role\":\"mfa\"...",
+  "date": "2026-09-13 00:00:00"
+}
+```
+
+:::note Two-Stage Authentication Flow
+When the returned token has role `mfa`, the client is restricted from operational routes (`/api/peer`, `/api/server`, etc.). The client must provide this token in the `Authorization: Bearer <mfa_token>` header to `POST /api/auth/mfa/verify` along with the user's 6-digit TOTP code to obtain the final session JWT.
+:::
 
 ---
 
@@ -368,7 +412,139 @@ If the user account is in the `Disabled` state (the default for new SSO registra
 
 ---
 
-### 11. Using the Bearer Token
+### 11. Enable Multi-Factor Authentication (`POST /api/auth/mfa/enable`)
+
+Enables Time-Based One-Time Password (TOTP) two-factor authentication for the authenticated local user account. Generates a cryptographically random 20-byte Base32 secret, securely encrypts it in the database using ASP.NET Core Data Protection (`WireManager.MFA.Secret`), sets `mfaEnabled = true`, and returns the plaintext secret along with a standard `otpauth://` URI.
+
+**Requires Admin or Operator role.**
+
+:::note Local Accounts Only
+Multi-Factor Authentication on local accounts is exclusively available for local database users. If an external federated identity (SSO / OIDC) invokes this endpoint, the API rejects the request with HTTP `400 Bad Request` (`"Identities cannot enable mfa"`), as MFA policy for SSO accounts is managed directly within the upstream Identity Provider.
+:::
+
+#### Request
+```http
+POST /api/auth/mfa/enable HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <session_token>
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "secret": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+  "otpauthUri": "otpauth://totp/WireManager:admin?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=WireManager"
+}
+```
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `secret` | String | Plaintext Base32-encoded 20-byte secret key for manual entry into authenticator applications. |
+| `otpauthUri` | String (URI) | Standard Key URI scheme formatted as `otpauth://totp/WireManager:<username>?secret=<secret>&issuer=WireManager`, ready to be encoded into a QR code for mobile authenticator apps (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden). |
+
+#### Response (`400 Bad Request`)
+```text
+Identities cannot enable mfa
+```
+
+---
+
+### 12. Disable Multi-Factor Authentication (`POST /api/auth/mfa/disable`)
+
+Disables TOTP Multi-Factor Authentication for the authenticated local user account, clears the encrypted secret from the database, and sets `mfaEnabled = false`.
+
+**Requires Admin or Operator role.**
+
+#### Request
+```http
+POST /api/auth/mfa/disable HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <session_token>
+```
+
+#### Response (`200 OK`)
+```http
+HTTP/1.1 200 OK
+Content-Length: 0
+```
+
+#### Response (`400 Bad Request`)
+```text
+Identities cannot enable mfa
+```
+
+---
+
+### 13. Verify MFA Code (`POST /api/auth/mfa/verify`)
+
+Validates a 6-digit TOTP code during the two-stage login sequence. Requires presenting the intermediate JWT token issued by `POST /api/auth/login` (containing claim `role: "mfa"`).
+
+Upon successful validation against the stored secret (using a verification window of ±1 step, equivalent to ±30 seconds), the endpoint generates and returns a permanent 2-hour session JWT token populated with the user's actual operational role (`Admin` or `Operator`).
+
+**Requires `mfa` Bearer token.**
+
+#### Request
+```http
+POST /api/auth/mfa/verify HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <intermediate_mfa_token>
+Content-Type: application/json
+
+{
+  "code": "482910"
+}
+```
+
+| Field | Type | Required | Constraints | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `code` | String | Yes | Exactly 6 digits | The 6-digit TOTP code currently generated by the user's authenticator app. |
+
+#### Response (`200 OK`)
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImEyYjNjNGQ1LWU2ZjctODlhYi05YzA5LTEyMzQ1Njc4OTBhYiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhZG1pbiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzI1NDY4MDAwLCJpc3MiOiJXaXJlTWFuYWdlciIsImF1ZCI6IldpcmVNYW5hZ2VyQ2xpZW50cyJ9...",
+  "date": "2026-09-13 00:00:00"
+}
+```
+
+#### Response (`400 Bad Request`)
+Returned if the code is invalid/expired or if MFA is not enabled for the user:
+```text
+The code is not valid
+```
+
+---
+
+### 14. Get MFA Status (`GET /api/auth/mfa/enabled`)
+
+Retrieves the Multi-Factor Authentication activation status and identity provider linkage for the currently authenticated user.
+
+**Requires Admin or Operator role.**
+
+#### Request
+```http
+GET /api/auth/mfa/enabled HTTP/1.1
+Host: localhost:5070
+Authorization: Bearer <session_token>
+Accept: application/json
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "isEnabled": true,
+  "isIdentity": false
+}
+```
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `isEnabled` | Boolean | `true` if TOTP two-factor authentication is active on this account; otherwise `false`. |
+| `isIdentity` | Boolean | `true` if the account is associated with an external SSO/OIDC Identity Provider (preventing local MFA configuration); `false` for local database accounts. |
+
+---
+
+### 15. Using the Bearer Token
 
 Attach the returned token to the `Authorization` header with the `Bearer` prefix for all authenticated API requests:
 
@@ -465,9 +641,10 @@ async function fetchPeers() {
 
 | Status Code | Scenario | Recommended Client Action |
 | :--- | :--- | :--- |
-| **`401 Unauthorized`** | Missing, invalid, or expired JWT token | Re-authenticate by calling `POST /api/auth/login` to obtain a fresh token, then retry the request. |
-| **`403 Forbidden`** | User holds `Operator` role but requested an `Admin` endpoint | Ensure administrative credentials are used for privileged operations. |
-| **`400 Bad Request`** | Malformed username/password or invalid role payload | Verify payload validation rules (e.g. minimum password length). |
+| **`401 Unauthorized`** | Missing, invalid, or expired JWT token, or failed initial credentials | Re-authenticate by calling `POST /api/auth/login` to obtain a fresh token, then retry the request. |
+| **`403 Forbidden`** | User holds `Operator` role but requested an `Admin` endpoint, or presenting intermediate `mfa` token to non-MFA routes | Ensure proper role credentials are used for privileged operations; complete MFA verification first. |
+| **`400 Bad Request`** | Malformed username/password, invalid role payload, invalid TOTP code, or attempting local MFA on an SSO identity | Verify payload formatting and error message string. For MFA verification, submit the current 6-digit authenticator code. |
+| **`429 Too Many Requests`** | Exceeded the rate limit quota (15 requests per minute sliding window) on `/api/auth` endpoints | Halt requests immediately and implement exponential backoff or wait for the 1-minute window to slide before retrying. |
 
 :::note Re-Authentication Strategy
 Because tokens have a 2-hour lifespan, long-running automation scripts or sidecars should implement a 401 retry interceptor: when an API call returns `401 Unauthorized`, re-execute the login request, refresh the cached token, and retry the failed call once.
