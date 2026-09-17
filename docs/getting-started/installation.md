@@ -85,6 +85,7 @@ services:
       - DB_PASS=
       - FRONTEND_URL=
       - BACKEND_URL=
+      - TZ=
 
     volumes:
       - /path/into/server:/app/config
