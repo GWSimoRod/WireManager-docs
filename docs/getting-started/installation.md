@@ -88,6 +88,7 @@ services:
 
     volumes:
       - /path/into/server:/app/config
+      - /path/into/backup:/app/backup
       - /var/run/docker.sock:/var/run/docker.sock
 
     group_add:
@@ -170,6 +171,12 @@ getent group docker
 ```
 
 Update the `group_add` field in the Compose file with the GID returned for your system.
+
+:::
+
+:::tip Persistent Backup Directory (/app/backup)
+
+The `wiremanager-api` container generates automated and on-demand encrypted backups inside `/app/backup`. Mounting a persistent host directory to `/app/backup` (e.g. `/path/into/backup:/app/backup`) ensures that your backup archives survive container updates, recreations, and host migrations.
 
 :::
 

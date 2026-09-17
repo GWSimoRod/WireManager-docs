@@ -37,6 +37,7 @@ const sidebars: SidebarsConfig = {
         'guides/user-management',
         'guides/sso-configuration',
         'guides/audit-logs',
+        'guides/backup-restore',
       ],
     },
 
@@ -50,6 +51,7 @@ const sidebars: SidebarsConfig = {
         'api/peers',
         'api/servers',
         'api/policies',
+        'api/backup',
         'api/reference',
       ],
     },

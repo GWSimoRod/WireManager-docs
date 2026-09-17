@@ -42,7 +42,7 @@ Each audit record captures comprehensive context about the transaction:
 | `ActorId` | `String` | Unique identifier (UUID) of the user who initiated the action, or `"System"` for automated operations. |
 | `ActorType` | `String` | Role of the initiator: `Admin`, `Operator`, or `System`. |
 | `Action` | `String` | Structured dot-notation identifier for the action (e.g., `Peer.Create`, `Auth.Login`). |
-| `Entity` | `String` | The target resource category: `User`, `Peer`, `Server`, `Tag`, `Service`, `Policy`, or `Setup`. |
+| `Entity` | `String` | The target resource category: `User`, `Peer`, `Server`, `Tag`, `Service`, `Policy`, `Setup`, or `Backup`. |
 | `EntityId` | `String?` | Specific identifier of the modified resource (e.g., peer ID, user UUID, server ID). |
 | `IsSuccess` | `Boolean` | `true` if the operation completed successfully; `false` if an error or rejection occurred. |
 | `Details` | `String?` | Additional descriptive payload, diagnostic failure reason, or attribute diffs. |
@@ -102,7 +102,7 @@ The audit toolbar provides flexible, real-time filtering:
    - **Success**: Displays only operations that succeeded (`IsSuccess = true`).
    - **Failed**: Highlights rejected actions, invalid logins, or operational failures (`IsSuccess = false`).
 3. **Filter by Entity**:
-   - Choose a target entity from the dropdown (`User`, `Peer`, `Server`, `Tag`, `Service`, `Policy`, or `Setup`).
+   - Choose a target entity from the dropdown (`User`, `Peer`, `Server`, `Tag`, `Service`, `Policy`, `Setup`, or `Backup`).
 4. **Live Refresh**:
    - Click the **Refresh** button in the top-right corner to fetch newly generated log entries without reloading the browser.
 
@@ -196,6 +196,15 @@ WireManager tracks actions across all subsystem domains using standard dot-notat
 | :--- | :--- | :--- |
 | `Setup.Perform` | Initial onboarding wizard completed; first Admin created. | Setup already completed; database initialization error. |
 
+### 6. Backup & Disaster Recovery (`Backup`)
+
+| Action | Success Condition | Failure Trigger Example |
+| :--- | :--- | :--- |
+| `Backup.Create` | On-demand encrypted backup archive generated and exported. | Key extraction failure; database dump error. |
+| `Backup.Restore` | System state restored, database replaced, keys and firewall synced. | Invalid decryption password; corrupted backup file. |
+| `Backup.InitializeAutomatic` | Automatic backup schedule, retention, and password configured. | Database persistence error; Data Protection failure. |
+| `Backup.CreateAutomatic` | Scheduled automatic backup generated, saved to disk, and retention applied. | Disk full; file write permission denied. |
+
 ---
 
 ## REST API Integration
@@ -276,5 +285,6 @@ Ensure that changes to tags and network services (`Policy.UpdateTag`, `Policy.De
 ## Related Documentation
 
 - **[How to Manage Users and Roles](./user-management.md)** — RBAC roles, creating operators and administrators.
+- **[How to Manage Backups and Automatic Backups](./backup-restore.md)** — Encrypted snapshots, automated scheduling, and system recovery.
 - **[API Reference Catalog](../api/reference.md)** — Comprehensive index of all REST endpoints.
 - **[Architecture & Core Concepts](../concepts/overview.md)** — WireManager Zero-Trust networking principles.

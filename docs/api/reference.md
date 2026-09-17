@@ -17,6 +17,7 @@ graph TD
     API --> Policy["/api/policy<br/>(Tags & Services)"]
     API --> Setup["/api/setup<br/>(System Bootstrapping)"]
     API --> Audit["/api/Audit<br/>(Security Event Logs)"]
+    API --> Backup["/api/backup<br/>(Backup & Disaster Recovery)"]
 ```
 
 ---
@@ -30,6 +31,7 @@ For in-depth guides with complete request/response schemas, JSON examples, and c
 - **[Peer Management API](./peers.md)** — Peer provisioning, configuration export (`.conf`, QR code), status toggle, policy tags, live telemetry, and reverse proxy forward-auth.
 - **[Server Management API](./servers.md)** — WireGuard server interface provisioning, atomic configuration updates, network synchronization, and lifecycle management.
 - **[Policy & Zero-Trust Access Control API](./policies.md)** — Tag management, protected network service definitions, policy bindings, and dynamic firewall orchestration.
+- **[Backup & Disaster Recovery API](./backup.md)** — Cryptographically secured on-demand snapshots, scheduled automatic backups with retention policies, and atomic disaster recovery.
 - **[API Architecture & Overview](./overview.md)** — Base URLs, authentication lifecycles, and system requirements.
 
 ---
@@ -140,4 +142,18 @@ All endpoints under `/api/auth` are guarded by an ASP.NET Core sliding-window ra
 | `GET` | `/api/Audit` | Admin | Retrieves a paginated list of chronological system audit logs (supports `pageNumber`, `pageSize`). |
 
 *See full documentation in [How to Inspect Audit Logs and Security Events](../guides/audit-logs.md).*
+
+---
+
+### Backup & Disaster Recovery (`/api/backup`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/backup` | Admin | Generates and streams an encrypted backup file (`wiremanager-backup.json`). |
+| `POST` | `/api/backup/restore` | Admin | Uploads and restores an encrypted backup file, restoring database, keys, and firewall. |
+| `POST` | `/api/backup/automatic` | Admin | Configures automatic backup schedule, retention period, and encryption password. |
+| `GET` | `/api/backup/automatic` | Authenticated | Retrieves current automatic backup configuration (schedule and retention). |
+
+*See full documentation in [Backup & Disaster Recovery API](./backup.md).*
+
 
